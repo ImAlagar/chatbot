@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import SidebarHeader from './SidebarHeader';
-import ChatListItem from './ChatListItem';
+import ChatListGrouped from './ChatListGrouped';
 import ProfileSection from './ProfileSection';
 
 const ChatSidebar = ({
@@ -17,7 +17,7 @@ const ChatSidebar = ({
   onRenameChat
 }) => {
   const { theme, toggleTheme } = useTheme();
-  const [collapsed, setCollapsed] = useState(false); // 👈 ONLY NEW STATE
+  const [collapsed, setCollapsed] = useState(false);
 
   return (
     <>
@@ -49,21 +49,19 @@ const ChatSidebar = ({
             setCollapsed={setCollapsed}
           />
 
-          <div className="flex-1 overflow-x-visible p-2 space-y-1">
-            {chats.map(chat => (
-              <ChatListItem
-                key={chat.id}
-                chat={chat}
-                activeChatId={activeChatId}
-                theme={theme}
-                onSelectChat={onSelectChat}
-                onShare={onShareChat}
-                onRename={onRenameChat}
-                onArchive={onArchiveChat}
-                onDelete={onDeleteChat}
-                collapsed={collapsed}
-              />
-            ))}
+          {/* Chat list area */}
+          <div className="flex-1  overflow-x-visible p-2">
+            <ChatListGrouped
+              chats={chats}
+              activeChatId={activeChatId}
+              theme={theme}
+              onSelectChat={onSelectChat}
+              onShare={onShareChat}
+              onRename={onRenameChat}
+              onArchive={onArchiveChat}
+              onDelete={onDeleteChat}
+              collapsed={collapsed}
+            />
           </div>
 
           <ProfileSection

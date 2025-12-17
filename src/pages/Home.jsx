@@ -8,8 +8,12 @@ import ChatMessages from "../components/ChatMessages";
 import ChatInput from "../components/ChatInput";
 import { useTheme } from "../context/ThemeContext";
 
-const OPENROUTER_API_KEY = "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";
-const MODEL_ID = "nex-agi/deepseek-v3.1-nex-n1";
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+const MODEL_ID = import.meta.env.VITE_MODEL_ID;
+
+if (!OPENROUTER_API_KEY) {
+  console.warn("VITE_OPENROUTER_API_KEY environment variable is not set");
+}
 
 const Home = ({onClose,onShare,chatId}) => {
   const [chats, setChats] = useState(() => {
@@ -242,7 +246,7 @@ const handleRenameChat = (chatId, newTitle) => {
     }`}>
       {/* Sidebar */}
       <ChatSidebar
-        chats={chats}
+         chats={chats}
         activeChatId={activeChatId}
         onCreateChat={createNewChat}
         onSelectChat={handleChatSelect}
