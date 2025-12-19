@@ -1,9 +1,10 @@
-import React from "react";
-import { Send, ChevronUp, ChevronDown } from "lucide-react";
+import React, { useState } from "react";
+import { Send, ChevronUp, ChevronDown, Sparkles } from "lucide-react";
 import { useTheme } from "../context/ThemeContext";
 
 const ChatInput = ({ input, setInput, onSend, loading, onButtonClick, onScrollUp, onScrollDown }) => {
   const { theme } = useTheme();
+  const [showButtons, setShowButtons] = useState(false);
 
   const handleKeyDown = (e) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -17,22 +18,26 @@ const ChatInput = ({ input, setInput, onSend, loading, onButtonClick, onScrollUp
     {
       id: "platform_strategy",
       title: "Platform Strategy",
-      description: "I'll ask 5 questions (including location) to recommend best advertising platforms"
+      description: "I'll ask 5 questions (including location) to recommend best advertising platforms",
+      icon: "🎯"
     },
     {
       id: "meta_ads_creative", 
       title: "Meta Ads Creative",
-      description: "I'll ask 4 questions (including location) to create location-specific Meta Ads strategy"
+      description: "I'll ask 4 questions (including location) to create location-specific Meta Ads strategy",
+      icon: "🎨"
     },
     {
       id: "google_ads_keywords",
       title: "Google Ads Keywords",
-      description: "I'll ask 4 questions (including location) to develop location-specific Google Ads keywords"
+      description: "I'll ask 4 questions (including location) to develop location-specific Google Ads keywords",
+      icon: "🔍"
     },
     {
       id: "ad_copy",
       title: "Ad Copy",
-      description: "I'll ask 7 questions (including location) to generate location-specific ad copies"
+      description: "I'll ask 7 questions (including location) to generate location-specific ad copies",
+      icon: "📝"
     }
   ];
 
@@ -41,6 +46,14 @@ const ChatInput = ({ input, setInput, onSend, loading, onButtonClick, onScrollUp
     e.stopPropagation();
     console.log("ChatInput: Button clicked", flowType);
     onButtonClick(flowType);
+    // Hide buttons after clicking one (optional)
+    setShowButtons(false);
+  };
+
+  const toggleButtons = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setShowButtons(!showButtons);
   };
 
   return (
@@ -77,27 +90,46 @@ const ChatInput = ({ input, setInput, onSend, loading, onButtonClick, onScrollUp
         </button>
       </div>
 
-      {/* Mobile buttons - shown above input on mobile */}
-      <div className="lg:hidden flex flex-wrap gap-2 mb-4">
-        {buttons.map((btn) => (
-          <button
-            key={btn.id}
-            type="button"
-            onClick={(e) => handleButtonClick(e, btn.id)}
-            disabled={loading}
-            className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors relative group ${
-              theme === "dark"
-                ? "border-slate-700 text-gray-300 hover:bg-slate-800 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                : "border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
-            }`}
-            title={btn.description}
-          >
-            {btn.title}
-          </button>
-        ))}
+      {/* Toggle button for mobile - Always visible */}
+      <div className="lg:hidden flex justify-center mb-4">
+        <button
+          type="button"
+          onClick={toggleButtons}
+          className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors flex items-center gap-2 ${
+            theme === "dark"
+              ? "border-slate-700 text-gray-300 hover:bg-slate-800 hover:border-slate-600"
+              : "border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400"
+          }`}
+        >
+          <Sparkles size={16} />
+          {showButtons ? "Hide Templates" : "Show Templates"}
+        </button>
       </div>
 
-      {/* Input Area - With buttons inside for desktop */}
+      {/* Mobile buttons - shown when toggled */}
+      {showButtons && (
+        <div className="lg:hidden flex flex-wrap gap-2 mb-4 justify-center">
+          {buttons.map((btn) => (
+            <button
+              key={btn.id}
+              type="button"
+              onClick={(e) => handleButtonClick(e, btn.id)}
+              disabled={loading}
+              className={`px-4 py-2.5 rounded-lg text-sm font-medium border transition-colors relative group flex items-center gap-2 ${
+                theme === "dark"
+                  ? "border-slate-700 text-gray-300 hover:bg-slate-800 hover:border-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  : "border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 disabled:opacity-50 disabled:cursor-not-allowed"
+              }`}
+              title={btn.description}
+            >
+              <span>{btn.icon}</span>
+              {btn.title}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input Area */}
       <div>
         <div
           className={`rounded-2xl px-4 py-3 ${
@@ -106,16 +138,30 @@ const ChatInput = ({ input, setInput, onSend, loading, onButtonClick, onScrollUp
               : "bg-white border border-gray-300"
           }`}
         >
-
-
-          {/* Textarea and Send Button Row */}
+          {/* Textarea and Buttons Row */}
           <div className="flex items-start gap-2">
+            {/* Template Toggle Button (Desktop) */}
+            <button
+              type="button"
+              onClick={toggleButtons}
+              disabled={loading}
+              className={`p-3 rounded-full transition-colors self-end ${
+                theme === "dark"
+                  ? "bg-slate-800 text-gray-300 hover:bg-slate-700 border border-slate-700"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-300"
+              }`}
+              title={showButtons ? "Hide Templates" : "Show Templates"}
+            >
+              <Sparkles size={20} />
+            </button>
+            
+            {/* Textarea */}
             <textarea
               rows={2}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message DeepSeek"
+              placeholder="Type your message..."
               disabled={loading}
               className={`flex-1 p-3 resize-none bg-transparent text-sm outline-none ${
                 theme === "dark"
@@ -135,34 +181,37 @@ const ChatInput = ({ input, setInput, onSend, loading, onButtonClick, onScrollUp
             </button>
           </div>
 
-                    {/* Desktop buttons - Inside the input box */}
-          <div className="hidden lg:flex flex-wrap gap-2 mb-3">
-            {buttons.map((btn) => (
-              <button
-                key={btn.id}
-                type="button"
-                onClick={(e) => handleButtonClick(e, btn.id)}
-                disabled={loading}
-                className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all duration-200 relative group ${
-                  theme === "dark"
-                    ? "border-slate-700 text-gray-200 hover:bg-slate-800 hover:border-slate-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed bg-slate-800"
-                    : "border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-50"
-                }`}
-                title={btn.description}
-              >
-                {btn.title}
-                {btn.description && (
-                  <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-56 text-center pointer-events-none z-10 ${
-                    theme === "dark" 
-                      ? "bg-slate-800 text-gray-300 border border-slate-700 shadow-lg" 
-                      : "bg-gray-100 text-gray-700 border border-gray-300 shadow-lg"
-                  }`}>
-                    {btn.description}
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
+          {/* Desktop buttons - Inside the input box, shown when toggled */}
+          {showButtons && (
+            <div className="hidden lg:flex flex-wrap gap-2 mt-3">
+              {buttons.map((btn) => (
+                <button
+                  key={btn.id}
+                  type="button"
+                  onClick={(e) => handleButtonClick(e, btn.id)}
+                  disabled={loading}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold border transition-all duration-200 relative group flex items-center gap-2 ${
+                    theme === "dark"
+                      ? "border-slate-700 text-gray-200 hover:bg-slate-800 hover:border-slate-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed bg-slate-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100 hover:border-gray-400 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed bg-gray-50"
+                  }`}
+                  title={btn.description}
+                >
+                  <span className="text-lg">{btn.icon}</span>
+                  {btn.title}
+                  {btn.description && (
+                    <div className={`absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity w-64 text-center pointer-events-none z-10 ${
+                      theme === "dark" 
+                        ? "bg-slate-800 text-gray-300 border border-slate-700 shadow-lg" 
+                        : "bg-gray-100 text-gray-700 border border-gray-300 shadow-lg"
+                    }`}>
+                      {btn.description}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </footer>

@@ -1,6 +1,6 @@
-// Home.jsx - Complete Fixed Version
+// Home.jsx - Complete Updated Version with Welcome Message
 import React, { useState, useEffect, useMemo } from "react";
-import { Share } from "lucide-react";
+
 import { HiMenuAlt2 } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
@@ -9,6 +9,7 @@ import ChatSidebar from "../components/ChatSidebar";
 import ChatMessages from "../components/ChatMessages";
 import ChatInput from "../components/ChatInput";
 import { useTheme } from "../context/ThemeContext";
+import { LogOut } from "lucide-react";
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 const MODEL_ID = import.meta.env.VITE_MODEL_ID;
@@ -16,6 +17,8 @@ const MODEL_ID = import.meta.env.VITE_MODEL_ID;
 if (!OPENROUTER_API_KEY) {
   console.warn("VITE_OPENROUTER_API_KEY environment variable is not set");
 }
+
+
 
 const Home = ({ onClose, onShare, chatId }) => {
   const { user } = useAuth();
@@ -27,6 +30,7 @@ const Home = ({ onClose, onShare, chatId }) => {
   const [renameModal, setRenameModal] = useState({ open: false, chatId: null, currentTitle: "" });
   const [conversationFlow, setConversationFlow] = useState(null);
   const [messagesContainerRef, setMessagesContainerRef] = useState(null);
+  const [firstLogin, setFirstLogin] = useState(false);
 
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -44,6 +48,13 @@ const Home = ({ onClose, onShare, chatId }) => {
         try {
           const savedChats = localStorage.getItem(chatStorageKey);
           
+          // Check if this is first login by looking for a welcome chat
+          const hasWelcomeChat = savedChats && JSON.parse(savedChats).some(chat => 
+            chat.title === "Welcome Chat"
+          );
+          
+          setFirstLogin(!hasWelcomeChat);
+          
           if (savedChats) {
             const parsedChats = JSON.parse(savedChats);
             setChats(parsedChats);
@@ -55,19 +66,30 @@ const Home = ({ onClose, onShare, chatId }) => {
             }
           } else {
             setChats([]);
+            setFirstLogin(true);
           }
         } catch (error) {
           console.error("Error loading chats:", error);
           setChats([]);
+          setFirstLogin(true);
         }
       } else {
         setChats([]);
         setActiveChatId(null);
+        setFirstLogin(false);
       }
     };
 
     loadChats();
   }, [user, chatStorageKey]);
+
+  // Create welcome chat on first login
+  useEffect(() => {
+    if (firstLogin && user) {
+      const welcomeChatId = createWelcomeChat();
+      setFirstLogin(false);
+    }
+  }, [firstLogin, user]);
 
   // Save chats when they change
   useEffect(() => {
@@ -99,6 +121,36 @@ const Home = ({ onClose, onShare, chatId }) => {
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
 
+  // Function to create welcome chat for new users
+  const createWelcomeChat = () => {
+    const id = Date.now().toString();
+    const welcomeMessages = [
+      {
+        sender: "bot",
+        text: `👋 Welcome **${user.email}**! I'm Alien Chatbot, your AI assistant for digital marketing strategy.\n\nI can help you with:\n\n🎯 **Platform Strategy** - Find the best advertising platforms\n🎨 **Meta Ads Creative** - Create engaging ad content\n🔍 **Google Ads Keywords** - Discover high-intent keywords\n📝 **Ad Copy** - Write compelling ad copy\n\nClick any button below to get started, or just type your question!`,
+        timestamp: new Date().toISOString()
+      },
+      {
+        sender: "bot",
+        text: "💡 **Quick Tips:**\n- Use the buttons for structured guidance\n- You can rename chats anytime\n- All your conversations are saved\n- Share insights with your team\n\nWhat would you like to work on today?",
+        timestamp: new Date().toISOString()
+      }
+    ];
+    
+    const welcomeChat = { 
+      id, 
+      title: "Welcome Chat", 
+      messages: welcomeMessages,
+      createdAt: new Date().toISOString(),
+      userId: user.uid,
+      userEmail: user.email
+    };
+    
+    setChats((prev) => [welcomeChat, ...prev]);
+    setActiveChatId(id);
+    return id;
+  };
+
   const createNewChat = () => {
     if (!user) {
       alert("Please log in to create a chat");
@@ -118,6 +170,10 @@ const Home = ({ onClose, onShare, chatId }) => {
     setChats((prev) => [newChat, ...prev]);
     setActiveChatId(id);
     setSidebarOpen(false);
+    
+    // Reset conversation flow when creating new chat
+    setConversationFlow(null);
+    
     return id;
   };
 
@@ -685,61 +741,56 @@ ${RESPONSE_RULES}
       {/* Main Content */}
       <main className="flex-1 flex flex-col">
         {/* Header with user info */}
-        <header
-          className={`flex items-center justify-between p-3 border-b ${
-            theme === "dark" ? "border-slate-800" : "border-gray-200"
-          }`}
-        >
-          {/* Left: Menu button (mobile only) */}
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="md:hidden p-2 mr-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700"
+          <header
+            className={`flex items-center justify-between px-3 py-2 md:px-4 border-b ${
+              theme === "dark" ? "border-slate-800" : "border-gray-200"
+            }`}
           >
-            <HiMenuAlt2 size={20} />
-          </button>
+            {/* Left: Menu button (mobile only) */}
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700"
+                aria-label="Open Menu"
+              >
+                <HiMenuAlt2 size={20} />
+              </button>
+            </div>
 
-          {/* Center: Title and User Info */}
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="text-lg font-semibold truncate">
+            {/* Center: Title & User Info */}
+            <div className="flex-1 text-center px-2">
+              <h1 className="text-base md:text-lg font-semibold truncate">
                 Alien Chatbot
               </h1>
+
               {user && (
-                <p className="text-xs opacity-75">
-                  {user.email}
+                <p className="text-[11px] md:text-xs opacity-75 truncate max-w-[220px] mx-auto">
+                  Welcome {user.email}
                 </p>
               )}
             </div>
-          </div>
 
-          {/* Right: User Actions */}
-          <div className="flex items-center gap-2">
-            {user && (
-              <button
-                onClick={handleLogout}
-                className={`hidden sm:flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
-                  theme === "dark"
-                    ? "text-gray-300 hover:bg-slate-700"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
-              >
-                <span className="hidden md:inline">Logout</span>
-              </button>
-            )}
-            
-            <button
-              onClick={(e) => handleAction(onShare, e)}
-              className={`hidden sm:flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
-                theme === "dark"
-                  ? "text-gray-300 hover:bg-slate-700"
-                  : "text-gray-700 hover:bg-gray-100"
-              }`}
-            >
-              <Share size={16} />
-              <span className="hidden md:inline">Share</span>
-            </button>
-          </div>
-        </header>
+            {/* Right: User Actions */}
+            <div className="flex items-center gap-1 md:gap-2">
+              {user && (
+                <button
+                  onClick={handleLogout}
+                  className={`flex items-center gap-2 p-2 md:px-3 md:py-2 text-sm rounded-lg ${
+                    theme === "dark"
+                      ? "text-gray-300 hover:bg-slate-700"
+                      : "text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  {/* Mobile: icon only */}
+                  <span className="sm:hidden"><LogOut size={16} /></span>
+
+                  {/* Desktop: text */}
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              )}
+            </div>
+          </header>
+
 
         {/* Messages - Show different states based on user */}
         {!user ? (

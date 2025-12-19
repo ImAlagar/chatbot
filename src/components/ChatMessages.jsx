@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
-import { useTheme } from '../context/ThemeContext';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import React, { useEffect, useRef } from "react";
+import { useTheme } from "../context/ThemeContext";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 const ChatMessages = ({ messages, loading, setMessagesRef }) => {
   const { theme } = useTheme();
@@ -17,12 +17,17 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
   // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, loading]);
 
   return (
     <section
       ref={containerRef}
-      className="flex-1 overflow-y-auto px-4 py-4 space-y-3"
+      className="
+        flex-1 overflow-y-auto
+        px-2 sm:px-4 lg:px-6
+        py-3 sm:py-4
+        space-y-3
+      "
     >
       {messages.map((msg, i) => (
         <div
@@ -32,37 +37,65 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
           }`}
         >
           <div
-            className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
-              msg.sender === "user"
-                ? theme === 'dark'
-                  ? "bg-blue-600 text-white"
-                  : "bg-blue-500 text-white"
-                : theme === 'dark'
+            className={`
+              w-fit
+              max-w-[92%] sm:max-w-[85%] md:max-w-[75%] lg:max-w-[70%]
+              rounded-2xl
+              px-3 sm:px-4
+              py-2
+              text-xs sm:text-sm lg:text-base
+              break-words
+              ${
+                msg.sender === "user"
+                  ? theme === "dark"
+                    ? "bg-blue-600 text-white"
+                    : "bg-blue-500 text-white"
+                  : theme === "dark"
                   ? "bg-slate-800 text-gray-100"
                   : "bg-gray-100 text-gray-800"
-            }`}
+              }
+            `}
           >
             {msg.sender === "bot" ? (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
                   h1: ({ children }) => (
-                    <h1 className="text-lg font-bold mb-2">{children}</h1>
+                    <h1 className="text-base sm:text-lg font-bold mb-2">
+                      {children}
+                    </h1>
                   ),
                   h2: ({ children }) => (
-                    <h2 className="text-base font-semibold mb-2">{children}</h2>
+                    <h2 className="text-sm sm:text-base font-semibold mb-2">
+                      {children}
+                    </h2>
                   ),
                   h3: ({ children }) => (
-                    <h3 className="text-sm font-semibold mb-1">{children}</h3>
+                    <h3 className="text-sm font-semibold mb-1">
+                      {children}
+                    </h3>
                   ),
                   p: ({ children }) => (
-                    <p className="mb-2 whitespace-pre-wrap">{children}</p>
+                    <p className="mb-2 whitespace-pre-wrap">
+                      {children}
+                    </p>
+                  ),
+                  ul: ({ children }) => (
+                    <ul className="pl-4 list-disc space-y-1">
+                      {children}
+                    </ul>
                   ),
                   li: ({ children }) => (
-                    <li className="ml-4 list-disc mb-1">{children}</li>
+                    <li className="leading-relaxed">{children}</li>
                   ),
+                  p: ({ children }) => (
+                    <p className="leading-relaxed mb-1">{children}</p>
+                  ),
+
                   strong: ({ children }) => (
-                    <strong className="font-semibold">{children}</strong>
+                    <strong className="font-semibold">
+                      {children}
+                    </strong>
                   ),
                 }}
               >
@@ -75,21 +108,29 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
         </div>
       ))}
 
+      {/* Loading state */}
       {loading && (
         <div className="flex justify-start">
           <div
-            className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-              theme === 'dark'
-                ? "bg-slate-800 text-gray-100"
-                : "bg-gray-100 text-gray-800"
-            }`}
+            className={`
+              max-w-[90%] sm:max-w-[80%]
+              rounded-2xl
+              px-3 sm:px-4
+              py-2
+              text-xs sm:text-sm
+              ${
+                theme === "dark"
+                  ? "bg-slate-800 text-gray-100"
+                  : "bg-gray-100 text-gray-800"
+              }
+            `}
           >
             <div className="flex items-center gap-2">
-              <div className="animate-pulse">Thinking</div>
+              <span className="animate-pulse">Thinking</span>
               <div className="flex gap-1">
-                <div className="w-1 h-1 rounded-full bg-current animate-bounce" />
-                <div className="w-1 h-1 rounded-full bg-current animate-bounce delay-150" />
-                <div className="w-1 h-1 rounded-full bg-current animate-bounce delay-300" />
+                <span className="w-1 h-1 rounded-full bg-current animate-bounce" />
+                <span className="w-1 h-1 rounded-full bg-current animate-bounce delay-150" />
+                <span className="w-1 h-1 rounded-full bg-current animate-bounce delay-300" />
               </div>
             </div>
           </div>
