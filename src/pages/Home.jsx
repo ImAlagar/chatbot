@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+// Home.jsx - Complete Fixed Version
+import React, { useState, useEffect, useMemo } from "react";
 import { Share } from "lucide-react";
 import { HiMenuAlt2 } from "react-icons/hi";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../firebase";
+import { useAuth } from "../context/AuthContext";
 import ChatSidebar from "../components/ChatSidebar";
 import ChatMessages from "../components/ChatMessages";
 import ChatInput from "../components/ChatInput";
@@ -16,34 +18,103 @@ if (!OPENROUTER_API_KEY) {
 }
 
 const Home = ({ onClose, onShare, chatId }) => {
-  const [chats, setChats] = useState(() => {
-    const savedChats = localStorage.getItem('chat-conversations');
-    return savedChats ? JSON.parse(savedChats) : [];
-  });
+  const { user } = useAuth();
+  const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [renameModal, setRenameModal] = useState({ open: false, chatId: null, currentTitle: "" });
   const [conversationFlow, setConversationFlow] = useState(null);
+  const [messagesContainerRef, setMessagesContainerRef] = useState(null);
+
   const navigate = useNavigate();
   const { theme } = useTheme();
 
-  // Save chats to localStorage
+  // Calculate storage key based on user
+  const chatStorageKey = useMemo(() => {
+    if (!user) return 'guest_chat-conversations';
+    return `user_${user.uid}_chat-conversations`;
+  }, [user]);
+
+  // Load chats when user changes
   useEffect(() => {
-    localStorage.setItem('chat-conversations', JSON.stringify(chats));
-  }, [chats]);
+    const loadChats = () => {
+      if (user) {
+        try {
+          const savedChats = localStorage.getItem(chatStorageKey);
+          
+          if (savedChats) {
+            const parsedChats = JSON.parse(savedChats);
+            setChats(parsedChats);
+            
+            // If there are chats, select the most recent one
+            if (parsedChats.length > 0) {
+              const mostRecentChat = parsedChats[0];
+              setActiveChatId(mostRecentChat.id);
+            }
+          } else {
+            setChats([]);
+          }
+        } catch (error) {
+          console.error("Error loading chats:", error);
+          setChats([]);
+        }
+      } else {
+        setChats([]);
+        setActiveChatId(null);
+      }
+    };
+
+    loadChats();
+  }, [user, chatStorageKey]);
+
+  // Save chats when they change
+  useEffect(() => {
+    if (user && chats.length > 0) {
+      try {
+        localStorage.setItem(chatStorageKey, JSON.stringify(chats));
+      } catch (error) {
+        console.error("Error saving chats:", error);
+      }
+    }
+  }, [chats, user, chatStorageKey]);
+
+  // Clear guest chats when user logs in
+  useEffect(() => {
+    if (user) {
+      const guestKey = 'guest_chat-conversations';
+      const guestChats = localStorage.getItem(guestKey);
+      if (guestChats) {
+        localStorage.removeItem(guestKey);
+      }
+    }
+  }, [user]);
+
+  const setMessagesRef = (ref) => {
+    if (ref) {
+      setMessagesContainerRef(ref);
+    }
+  };
 
   const activeChat = chats.find((c) => c.id === activeChatId) || null;
 
   const createNewChat = () => {
+    if (!user) {
+      alert("Please log in to create a chat");
+      return null;
+    }
+
     const id = Date.now().toString();
     const newChat = { 
       id, 
       title: "New chat", 
       messages: [],
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
+      userId: user.uid,
+      userEmail: user.email
     };
+    
     setChats((prev) => [newChat, ...prev]);
     setActiveChatId(id);
     setSidebarOpen(false);
@@ -69,7 +140,6 @@ const Home = ({ onClose, onShare, chatId }) => {
     let flowData = {};
 
     switch (flowType) {
-
       case "platform_strategy":
         initialMessage = "I'll help you with Platform Strategy. Let me ask you a few questions to provide the best recommendation.";
         questions = [
@@ -121,7 +191,6 @@ const Home = ({ onClose, onShare, chatId }) => {
         };
         break;
 
-        
       case "ad_copy":
         initialMessage = "I'll help you create Ad Copy. Let me ask you a few questions.";
         questions = [
@@ -141,7 +210,6 @@ const Home = ({ onClose, onShare, chatId }) => {
           collected: {}
         };
         break;
-
 
       default:
         return;
@@ -198,20 +266,19 @@ const Home = ({ onClose, onShare, chatId }) => {
     if (!conversationFlow) return null;
 
     const { type, step, totalSteps, questions, collected } = conversationFlow;
-    
-    // Update collected data
+
     const newCollected = { ...collected };
     const questionKey = `question_${step}`;
     newCollected[questionKey] = userInput;
 
+    // 🔁 CONTINUE ASKING QUESTIONS
     if (step < totalSteps) {
-      // Ask next question
       const botMessage = {
         sender: "bot",
         text: questions[step],
         timestamp: new Date().toISOString()
       };
-      
+
       setChats((prev) =>
         prev.map((chat) =>
           chat.id === chatId
@@ -219,104 +286,138 @@ const Home = ({ onClose, onShare, chatId }) => {
             : chat
         )
       );
-      
+
       setConversationFlow({
         ...conversationFlow,
         step: step + 1,
         collected: newCollected
       });
-      
-      return "continue"; // Continue flow
-    } else {
-      // All questions answered, generate final prompt
-      newCollected[questionKey] = userInput;
-      
-      // Create final prompt based on flow type
-      let finalPrompt = "";
-      
-      switch (type) {
-        case "platform_strategy":
-          finalPrompt = `Act as an expert digital marketing strategist with 10+ years of experience in paid media across Google, Meta, LinkedIn, TikTok, and programmatic platforms. Your thinking should be analytical, data-driven, and consultative.
 
-        Core Task: Conduct a preliminary marketing platform prioritization and high-level competitor analysis for a newly onboarded client. The goal is to identify the top 3 most suitable paid advertising platforms for their business and justify the investment priority.
-
-        IMPORTANT: The client is located in ${newCollected.question_4}. Please provide location-specific recommendations considering the market in ${newCollected.question_4}.
-
-        Client Information:
-        1. Client Business Name: ${newCollected.question_1}
-        2. Core Product/Service: ${newCollected.question_2}
-        3. Primary Target Audience: ${newCollected.question_3}
-        4. Location: ${newCollected.question_4}
-        5. Key Campaign Goal: ${newCollected.question_5}
-
-        Please provide your analysis and recommendations SPECIFICALLY for businesses in ${newCollected.question_4}.`;
-          break;
-
-        case "meta_ads_creative":
-          finalPrompt = `Act as a Senior Meta Ads Creative Strategist and Video Producer. You specialize in crafting scroll-stopping ad concepts for the Facebook and Instagram ecosystem that drive real business results. Your thinking is rooted in human psychology, platform trends, and direct response principles.
-
-        Core Task: Develop a comprehensive creative strategy and production plan for a Meta Ads campaign.
-
-        IMPORTANT: The client is located in ${newCollected.question_2}. Please provide creative ideas that would resonate with people in ${newCollected.question_2}, considering local culture, trends, and preferences.
-
-        Client Information:
-        1. Client Business: ${newCollected.question_1}
-        2. Location: ${newCollected.question_2}
-        3. Campaign Primary Goal: ${newCollected.question_3}
-        4. Target Audience: ${newCollected.question_4}
-
-        Please provide location-specific creative strategy for ${newCollected.question_2}.`;
-          break;
-
-        case "google_ads_keywords":
-          finalPrompt = `Act as a Senior Google Ads Consultant and Search Strategist with a decade of experience in building profitable, scalable PPC accounts. Your expertise lies in selecting the right campaign mix, structuring accounts for optimal performance, and uncovering high-intent keyword opportunities. Your thinking is analytical, user-intent focused, and rooted in commercial outcomes.
-
-        Core Task: Develop a foundational Google Ads campaign strategy and keyword discovery plan.
-
-        IMPORTANT: The client is located in ${newCollected.question_2}. Please provide location-specific keywords and strategies for ${newCollected.question_2}. Include:
-        1. Location-based keywords for ${newCollected.question_2}
-        2. Competitor analysis for ${newCollected.question_2}
-        3. Local search trends in ${newCollected.question_2}
-        4. Geo-targeting recommendations for ${newCollected.question_2}
-
-        Client Information:
-        1. Client Business: ${newCollected.question_1}
-        2. Location: ${newCollected.question_2}
-        3. Campaign Primary Goal: ${newCollected.question_3}
-        4. Target Audience & Their Search Mindset: ${newCollected.question_4}
-
-        Please provide Google Ads strategy SPECIFICALLY for ${newCollected.question_2}.`;
-          break;
-
-        case "ad_copy":
-          finalPrompt = `Act as a world-class direct response copywriter specializing in paid advertising. You master the AIDA (Attention, Interest, Desire, Action) and PAS (Problem, Agitate, Solution) frameworks. Your copy is concise, benefit-driven, and engineered to get clicks from a cold audience.
-
-        Core Task: Generate 5 distinct, high-converting ad copy variants for a paid social or search campaign.
-
-        IMPORTANT: The business is located in ${newCollected.question_4}. Please create ad copies that:
-        1. Mention the location ${newCollected.question_4} specifically
-        2. Appeal to local customers in ${newCollected.question_4}
-        3. Use local language/dialect if appropriate for ${newCollected.question_4}
-        4. Reference local landmarks or culture of ${newCollected.question_4} if relevant
-
-        Client Information:
-        1. Business/Product: ${newCollected.question_1}
-        2. Target Customer's Deepest Pain Point: ${newCollected.question_2}
-        3. Core Offer & Key Benefit: ${newCollected.question_3}
-        4. Location: ${newCollected.question_4}
-        5. Unique Selling Proposition (USP): ${newCollected.question_5}
-        6. Desired Action & CTA: ${newCollected.question_6}
-        7. Tone of Voice: ${newCollected.question_7}
-
-        Please provide 5 ad copy variants SPECIFICALLY targeting customers in ${newCollected.question_4}.`;
-          break;
-
-      }
-
-      // Clear conversation flow
-      setConversationFlow(null);
-      return finalPrompt;
+      return "continue";
     }
+
+    // ✅ FLOW COMPLETE – FINAL PROMPT
+    let finalPrompt = "";
+
+    const RESPONSE_RULES = `
+Response format rules:
+- Use markdown
+- Use clear headings and sub-headings
+- Use bullet points where helpful
+- Keep spacing clean
+- Make content easy to copy-paste
+- Write like a professional ChatGPT consultant
+`;
+
+    switch (type) {
+      case "platform_strategy":
+        finalPrompt = `
+You are a senior digital marketing strategist with 10+ years experience.
+
+Task:
+Recommend the TOP 3 paid advertising platforms for this business.
+
+Client Details:
+- Business Name: ${newCollected.question_1}
+- Product / Service: ${newCollected.question_2}
+- Target Audience: ${newCollected.question_3}
+- Location: ${newCollected.question_4}
+- Campaign Goal: ${newCollected.question_5}
+
+Guidelines:
+- Focus ONLY on ${newCollected.question_4} market
+- Explain why each platform works
+- Suggest budget split in percentage
+- Be practical and realistic
+
+${RESPONSE_RULES}
+`;
+        break;
+
+      case "meta_ads_creative":
+        finalPrompt = `
+You are a senior Meta Ads creative strategist.
+
+Task:
+Create a Meta Ads creative strategy.
+
+Client Details:
+- Business: ${newCollected.question_1}
+- Location: ${newCollected.question_2}
+- Campaign Goal: ${newCollected.question_3}
+- Target Audience: ${newCollected.question_4}
+
+Include:
+- Ad angles
+- Reel / video ideas
+- Hook ideas
+- CTA suggestions
+
+Focus ONLY on ${newCollected.question_2} audience.
+
+${RESPONSE_RULES}
+`;
+        break;
+
+      case "google_ads_keywords":
+        finalPrompt = `
+You are a senior Google Ads search strategist.
+
+Task:
+Create Google Ads keyword and campaign structure.
+
+Client Details:
+- Business: ${newCollected.question_1}
+- Location: ${newCollected.question_2}
+- Campaign Goal: ${newCollected.question_3}
+- Audience Search Mindset: ${newCollected.question_4}
+
+Include:
+- High intent keywords
+- Local keywords
+- Campaign structure
+- Match type suggestions
+
+Focus ONLY on ${newCollected.question_2}.
+
+${RESPONSE_RULES}
+`;
+        break;
+
+      case "ad_copy":
+        finalPrompt = `
+You are a direct response ad copy expert.
+
+Task:
+Write 5 high-converting ad copy variations.
+
+Client Details:
+- Business: ${newCollected.question_1}
+- Customer Pain Point: ${newCollected.question_2}
+- Core Offer & Benefit: ${newCollected.question_3}
+- Location: ${newCollected.question_4}
+- USP: ${newCollected.question_5}
+- CTA: ${newCollected.question_6}
+- Tone: ${newCollected.question_7}
+
+Rules:
+- Mention ${newCollected.question_4} naturally
+- Keep copy short and scroll-stopping
+- Simple words only
+- Avoid fluff
+
+${RESPONSE_RULES}
+`;
+        break;
+
+      default:
+        break;
+    }
+
+    // 🧹 RESET FLOW
+    setConversationFlow(null);
+
+    return finalPrompt;
   };
 
   const sendMessage = async () => {
@@ -537,6 +638,30 @@ const Home = ({ onClose, onShare, chatId }) => {
     onClose();
   };
 
+  const handleScrollUp = () => {
+    if (messagesContainerRef) {
+      messagesContainerRef.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleScrollDown = () => {
+    if (messagesContainerRef) {
+      messagesContainerRef.scrollTo({ 
+        top: messagesContainerRef.scrollHeight, 
+        behavior: 'smooth' 
+      });
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await auth.signOut();
+      navigate("/login");
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <div className={`h-screen flex overflow-hidden transition-colors ${
       theme === 'dark' 
@@ -559,7 +684,7 @@ const Home = ({ onClose, onShare, chatId }) => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col">
-        {/* Header */}
+        {/* Header with user info */}
         <header
           className={`flex items-center justify-between p-3 border-b ${
             theme === "dark" ? "border-slate-800" : "border-gray-200"
@@ -573,30 +698,71 @@ const Home = ({ onClose, onShare, chatId }) => {
             <HiMenuAlt2 size={20} />
           </button>
 
-          {/* Center: Title */}
-          <h1 className="text-lg font-semibold truncate">
-            Alien Chatbot
-          </h1>
+          {/* Center: Title and User Info */}
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <h1 className="text-lg font-semibold truncate">
+                Alien Chatbot
+              </h1>
+              {user && (
+                <p className="text-xs opacity-75">
+                  {user.email}
+                </p>
+              )}
+            </div>
+          </div>
 
-          {/* Right: Share button */}
-          <button
-            onClick={(e) => handleAction(onShare, e)}
-            className={`hidden sm:flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
-              theme === "dark"
-                ? "text-gray-300 hover:bg-slate-700"
-                : "text-gray-700 hover:bg-gray-100"
-            }`}
-          >
-            <Share size={16} />
-            <span className="hidden md:inline">Share</span>
-          </button>
+          {/* Right: User Actions */}
+          <div className="flex items-center gap-2">
+            {user && (
+              <button
+                onClick={handleLogout}
+                className={`hidden sm:flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                  theme === "dark"
+                    ? "text-gray-300 hover:bg-slate-700"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
+              >
+                <span className="hidden md:inline">Logout</span>
+              </button>
+            )}
+            
+            <button
+              onClick={(e) => handleAction(onShare, e)}
+              className={`hidden sm:flex items-center gap-2 px-3 py-2 text-sm rounded-lg ${
+                theme === "dark"
+                  ? "text-gray-300 hover:bg-slate-700"
+                  : "text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              <Share size={16} />
+              <span className="hidden md:inline">Share</span>
+            </button>
+          </div>
         </header>
 
-        {/* Messages */}
-        {activeChat ? (
+        {/* Messages - Show different states based on user */}
+        {!user ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-4">
+            <div className="text-center">
+              <h2 className="text-xl font-semibold mb-4">Please log in</h2>
+              <button
+                onClick={() => navigate("/login")}
+                className={`px-4 py-2 rounded-lg ${
+                  theme === 'dark'
+                    ? 'bg-emerald-500 hover:bg-emerald-600 text-black'
+                    : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                }`}
+              >
+                Go to Login
+              </button>
+            </div>
+          </div>
+        ) : activeChat ? (
           <ChatMessages 
             messages={activeChat.messages} 
             loading={loading} 
+            setMessagesRef={setMessagesRef}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center p-4">
@@ -617,14 +783,16 @@ const Home = ({ onClose, onShare, chatId }) => {
           </div>
         )}
 
-        {/* Input - Only show if chat is active */}
-        {activeChat && (
+        {/* Input - Only show if user is logged in and chat is active */}
+        {user && activeChat && (
           <ChatInput 
             input={input}
             setInput={setInput}
             onSend={sendMessage}
             loading={loading}
             onButtonClick={handleButtonClick}
+            onScrollUp={handleScrollUp}
+            onScrollDown={handleScrollDown}
           />
         )}
       </main>

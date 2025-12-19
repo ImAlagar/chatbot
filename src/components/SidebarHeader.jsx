@@ -68,30 +68,7 @@ const SidebarHeader = ({
         )}
       </div>
 
-      {/* Search */}
-      {!collapsed && (
-        <div className="relative">
-          <div className={`flex items-center gap-3 p-1.5 rounded-lg
-            ${isSearchFocused
-              ? theme === 'dark'
-                ? 'bg-slate-800'
-                : 'bg-white ring-1 ring-black'
-              : theme === 'dark'
-                ? 'bg-slate-900/50'
-                : 'bg-gray-50'}
-          `}>
-            <Search size={18} />
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onFocus={() => setIsSearchFocused(true)}
-              onBlur={() => setIsSearchFocused(false)}
-              placeholder="Search your chats..."
-              className="w-full bg-transparent outline-none text-sm"
-            />
-          </div>
-        </div>
-      )}
+
 
       <div className={`h-px ${
         theme === 'dark' ? 'bg-slate-800' : 'bg-gray-200'

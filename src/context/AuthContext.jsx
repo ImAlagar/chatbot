@@ -1,3 +1,4 @@
+// context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../firebase";
 import { onAuthStateChanged } from "firebase/auth";
@@ -17,8 +18,18 @@ export const AuthProvider = ({ children }) => {
     return () => unsubscribe();
   }, []);
 
+  // Function to get user-specific storage key
+  const getStorageKey = (baseKey) => {
+    if (!user) return baseKey;
+    return `user_${user.uid}_${baseKey}`;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading,
+      getStorageKey 
+    }}>
       {children}
     </AuthContext.Provider>
   );

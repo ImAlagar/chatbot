@@ -103,15 +103,6 @@ const ChatListItem = ({
         )}
       </div>
 
-      {/* Show time in non-collapsed mode */}
-      {!collapsed && !editing && (chat.lastUpdated || chat.createdAt) && (
-        <div className={`text-xs px-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-          {new Date(chat.lastUpdated || chat.createdAt).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}
-        </div>
-      )}
 
       {/* More options button - only show when not editing */}
       {(hovered || showDropdown) && !collapsed && !editing && (

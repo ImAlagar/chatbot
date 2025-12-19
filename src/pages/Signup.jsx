@@ -4,8 +4,12 @@ import { auth } from "../firebase";
 import { useNavigate } from "react-router-dom";
 import { Mail, Eye, EyeOff, X } from "lucide-react";
 import { toast } from "react-toastify";
+import { useAdminAuth } from "../context/AdminAuthContext";
+import chatbot1 from "../assets/chatbot1.jpg"
 
 const Signup = () => {
+    const { logout } = useAdminAuth();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -49,8 +53,7 @@ const Signup = () => {
     <div
       className="min-h-screen flex items-center justify-center bg-cover bg-center font-poppins"
       style={{
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1519681393784-d120267933ba')",
+        backgroundImage: `url(${chatbot1})`,
       }}
     >
       <div className="relative w-[340px] rounded-2xl border border-white/70 backdrop-blur-3xl shadow-2xl overflow-hidden">
@@ -134,8 +137,20 @@ const Signup = () => {
             >
               Login here
             </span>
+            
           </p>
 
+          <div className="flex items-center justify-center">
+                <button
+              onClick={() => {
+                logout();
+                navigate("/admin-login");
+              }}
+              className=" text-center text-white bg-gradient-to-r from-emerald-700 to-emerald-900 border-black  p-2 rounded-md text-sm mt-6"
+            >
+              Admin Logout
+            </button>
+          </div>
         </div>
       </div>
     </div>
