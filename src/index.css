@@ -4,7 +4,8 @@
 
 
 body {
-  font-family: 'Poppins', sans-serif;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  @apply bg-yellow-50/30; /* Added the yellow-50/30 background */
 }
 
 /* Custom scrollbar */

@@ -47,12 +47,10 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
               break-words
               ${
                 msg.sender === "user"
-                  ? theme === "dark"
-                    ? "bg-blue-600 text-white"
-                    : "bg-blue-500 text-white"
+                  ? "bg-[#5E17EB] text-white" // User messages: #5E17EB with white text for both themes
                   : theme === "dark"
-                  ? "bg-slate-800 text-gray-100"
-                  : "bg-gray-100 text-gray-800"
+                  ? "bg-slate-800 text-gray-100" // Bot messages in dark theme (unchanged)
+                  : "bg-white text-gray-800" // Bot messages in light theme: white background, black text
               }
             `}
           >
@@ -75,11 +73,14 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
                       {children}
                     </h3>
                   ),
+
+                  // ✅ SINGLE p TAG
                   p: ({ children }) => (
-                    <p className="mb-2 whitespace-pre-wrap">
+                    <p className="leading-relaxed mb-2 whitespace-pre-wrap">
                       {children}
                     </p>
                   ),
+
                   ul: ({ children }) => (
                     <ul className="pl-4 list-disc space-y-1">
                       {children}
@@ -88,14 +89,8 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
                   li: ({ children }) => (
                     <li className="leading-relaxed">{children}</li>
                   ),
-                  p: ({ children }) => (
-                    <p className="leading-relaxed mb-1">{children}</p>
-                  ),
-
                   strong: ({ children }) => (
-                    <strong className="font-semibold">
-                      {children}
-                    </strong>
+                    <strong className="font-semibold">{children}</strong>
                   ),
                 }}
               >
@@ -121,7 +116,7 @@ const ChatMessages = ({ messages, loading, setMessagesRef }) => {
               ${
                 theme === "dark"
                   ? "bg-slate-800 text-gray-100"
-                  : "bg-gray-100 text-gray-800"
+                  : "bg-white text-gray-800" // Loading state in light theme: white background
               }
             `}
           >

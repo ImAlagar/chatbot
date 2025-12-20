@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   X,
-  Search,
   SquarePen,
   PanelLeftClose,
   PanelLeftOpen
@@ -18,15 +17,15 @@ const SidebarHeader = ({
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   return (
-    <div className="p-5 space-y-3">
+    <div className="p-5 space-y-3 font-bricolage">
 
       {/* First Row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between ">
         {!collapsed && (
           <span className={`font-semibold ${
             theme === 'dark' ? 'text-white' : 'text-gray-900'
           }`}>
-            ChatBot
+            DW AI Advisor
           </span>
         )}
 

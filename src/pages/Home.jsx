@@ -127,7 +127,7 @@ const Home = ({ onClose, onShare, chatId }) => {
     const welcomeMessages = [
       {
         sender: "bot",
-        text: `👋 Welcome **${user.email}**! I'm Alien Chatbot, your AI assistant for digital marketing strategy.\n\nI can help you with:\n\n🎯 **Platform Strategy** - Find the best advertising platforms\n🎨 **Meta Ads Creative** - Create engaging ad content\n🔍 **Google Ads Keywords** - Discover high-intent keywords\n📝 **Ad Copy** - Write compelling ad copy\n\nClick any button below to get started, or just type your question!`,
+        text: `👋 Welcome **${user.email}**! I'm DW AI Advisor, your AI assistant for digital marketing strategy.\n\nI can help you with:\n\n🎯 **Platform Strategy** - Find the best advertising platforms\n🎨 **Meta Ads Creative** - Create engaging ad content\n🔍 **Google Ads Keywords** - Discover high-intent keywords\n📝 **Ad Copy** - Write compelling ad copy\n\nClick any button below to get started, or just type your question!`,
         timestamp: new Date().toISOString()
       },
       {
@@ -760,7 +760,7 @@ ${RESPONSE_RULES}
             {/* Center: Title & User Info */}
             <div className="flex-1 text-center px-2">
               <h1 className="text-base md:text-lg font-semibold truncate">
-                Alien Chatbot
+                DW AI Advisor
               </h1>
 
               {user && (
